@@ -1,0 +1,40 @@
+# Secrets and sensitive data
+adguard_config.json
+telegram_fallback.log
+openclaw_sent_alerts.log
+openclaw_sent_messages.log
+openclaw_outgoing.log
+
+# Log files
+*.log
+logs/
+
+# Data files
+smart_violations.log
+suspicious_domains.log
+telegram_smart_queue.log
+cron_job.log
+investigation_results.log
+investigated_domains.log
+needs_investigation.log
+
+# System files
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+/tmp/
+/test_new_alert.log

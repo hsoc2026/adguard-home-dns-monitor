@@ -1,0 +1,8 @@
+{
+  "base_url": "http://YOUR_ADGUARD_HOME_IP:PORT",
+  "username": "YOUR_USERNAME",
+  "password": "YOUR_PASSWORD",
+  "watch_ips": ["192.168.1.100", "192.168.1.101"],
+  "educational_domains_file": "educational_domains.txt",
+  "notification_channel": "telegram"
+}

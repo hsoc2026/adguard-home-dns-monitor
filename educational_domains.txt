@@ -1,0 +1,90 @@
+# Educational domains list
+# Add domains that should be allowed (considered educational)
+
+# Online Learning Platforms
+khanacademy.org
+khanacademy.com
+edx.org
+coursera.org
+udemy.com
+udacity.com
+codecademy.com
+freecodecamp.org
+pluralsight.com
+linkedin.com/learning
+skillshare.com
+
+# Universities
+mit.edu
+harvard.edu
+stanford.edu
+yale.edu
+princeton.edu
+berkeley.edu
+caltech.edu
+ox.ac.uk
+cam.ac.uk
+
+# Educational Resources
+wikipedia.org
+wikimedia.org
+arxiv.org
+researchgate.net
+scholar.google.com
+academia.edu
+jstor.org
+projectgutenberg.org
+libgen.rs
+libgen.is
+
+# Language Learning
+duolingo.com
+memrise.com
+babbel.com
+rosettastone.com
+
+# STEM Education
+brilliant.org
+ted.com
+crashcourse.com
+nationalgeographic.com
+smithsonianmag.com
+nasa.gov
+noaa.gov
+sciencemag.org
+nature.com
+
+# Coding & Tech
+github.com
+gitlab.com
+stackoverflow.com
+stackexchange.com
+python.org
+rust-lang.org
+golang.org
+developer.mozilla.org
+w3schools.com
+leetcode.com
+hackerrank.com
+codewars.com
+
+# Math & Science Tools
+mathway.com
+wolframalpha.com
+desmos.com
+geogebra.org
+chemguide.co.uk
+physicsclassroom.com
+biologycorner.com
+
+# Government Educational Sites
+.gov  # All .gov domains
+.edu  # All .edu domains
+.ac.uk  # UK academic institutions
+.sch.uk  # UK schools
+
+# Libraries
+loc.gov  # Library of Congress
+archive.org
+gutenberg.org
+openlibrary.org
