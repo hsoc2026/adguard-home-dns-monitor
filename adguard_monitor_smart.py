@@ -23,8 +23,12 @@ logger = logging.getLogger(__name__)
 
 class SmartAdGuardMonitor:
     def __init__(self, config_file="adguard_config.json"):
+        # Resolve config file path relative to script location
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, config_file)
+        
         # Load config
-        with open(config_file, 'r') as f:
+        with open(config_path, 'r') as f:
             config = json.load(f)
         
         self.base_url = config['base_url'].rstrip('/')
@@ -184,6 +188,11 @@ class SmartAdGuardMonitor:
             if not domain or client_ip not in self.watch_ips:
                 continue
             
+            # Skip if already blocked by filter
+            if query.get('filterId') is not None:
+                logger.debug(f"Already blocked: {domain} (filterId: {query.get('filterId')})")
+                continue
+            
             # Skip if already processed
             domain_key = f"{client_ip}:{domain}"
             if domain_key in self.processed_domains:
@@ -197,6 +206,7 @@ class SmartAdGuardMonitor:
                 continue
             
             # Check if games/entertainment
+            # print(f"Raw API data: {query}")  # Debugging line to see raw API response
             category, confidence = self.is_games_entertainment(domain)
             
             if category:
@@ -250,7 +260,7 @@ class SmartAdGuardMonitor:
         
         try:
             while True:
-                queries = self.get_query_log(limit=50)
+                queries = self.get_query_log(limit=500)
                 if queries:
                     self.process_queries(queries)
                 

@@ -20,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class TelegramSmartNotifier:
-    def __init__(self, queue_file="telegram_smart_queue.log", sent_file="telegram_smart_sent.log", check_interval=10):
+    def __init__(self, queue_file="telegram_smart_queue.log", sent_file="openclaw_sent_alerts.log", check_interval=10):
         self.queue_file = queue_file
         self.sent_file = sent_file
         self.check_interval = check_interval
@@ -73,14 +73,15 @@ class TelegramSmartNotifier:
     def send_telegram_message(self, message: str) -> bool:
         """
         Send message to Telegram via OpenClaw.
-        Since we're in a Telegram chat, we can send directly.
+        Send to Aaron's Telegram chat (ID: 8771371027).
         """
         try:
-            # Use OpenClaw CLI to send to current Telegram chat
-            # The chat ID should be detected automatically in current context
+            # Use OpenClaw CLI to send to Aaron's Telegram chat
             cmd = [
                 '/opt/homebrew/bin/openclaw', 'message', 'send',
                 '--channel', 'telegram',
+                '--account', 'internetsecurity',
+                '--target', '8771371027',
                 '--message', message
             ]
             

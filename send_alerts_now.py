@@ -7,6 +7,7 @@ Run this to send any pending alerts immediately.
 import json
 import os
 import hashlib
+import subprocess
 from datetime import datetime
 
 def get_message_hash(message: str) -> str:
@@ -49,6 +50,38 @@ def mark_as_sent(message_hash: str, sent_file="openclaw_sent_alerts.log"):
     with open(sent_file, 'a') as f:
         f.write(f"{message_hash}\n")
 
+def send_telegram_message(message: str) -> bool:
+    """Send message to Telegram via OpenClaw."""
+    try:
+        cmd = [
+            '/opt/homebrew/bin/openclaw', 'message', 'send',
+            '--channel', 'telegram',
+            '--account', 'internetsecurity',
+            '--target', '8771371027',
+            '--message', message
+        ]
+        
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            print(f"  ✅ Sent to Telegram")
+            return True
+        else:
+            print(f"  ❌ Failed: {result.stderr[:100]}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print(f"  ❌ Timeout")
+        return False
+    except Exception as e:
+        print(f"  ❌ Error: {e}")
+        return False
+
 def main():
     print("🔍 Checking for AdGuard alerts...")
     print("=" * 40)
@@ -79,25 +112,33 @@ def main():
     print(f"📤 {len(new_alerts)} new alert(s) to send:")
     print("=" * 40)
     
+    sent_count = 0
     for i, alert in enumerate(new_alerts, 1):
         print(f"\nAlert {i}:")
         print("-" * 20)
         print(alert)
         
-        # Mark as sent
-        alert_hash = get_message_hash(alert)
-        mark_as_sent(alert_hash)
+        # Send to Telegram
+        if send_telegram_message(alert):
+            # Mark as sent
+            alert_hash = get_message_hash(alert)
+            mark_as_sent(alert_hash)
+            sent_count += 1
+            print(f"✅ Marked as sent (hash: {alert_hash})")
+        else:
+            print(f"❌ Failed to send")
         
-        print(f"✅ Marked as sent (hash: {alert_hash})")
+        # Small delay to avoid rate limiting
+        import time
+        time.sleep(1)
     
     print()
     print("=" * 40)
-    print(f"✅ Processed {len(new_alerts)} new alert(s)")
+    print(f"✅ Sent {sent_count} new alert(s) to Telegram")
     print()
     print("📋 Next steps:")
-    print("   1. I'll send these alerts to you in Telegram")
-    print("   2. Check your Telegram for the alerts")
-    print("   3. Run this again to check for new alerts")
+    print("   1. Check your Telegram for the alerts")
+    print("   2. Run this again to check for new alerts")
     print()
     print("🔄 To automate: Run this script every minute")
 

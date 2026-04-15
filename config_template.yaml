@@ -1,0 +1,91 @@
+# AdGuard Home DNS Monitor - Configuration Template
+# Copy this file to config.yaml and customize for your setup
+
+# AdGuard Home Configuration
+adguard:
+  base_url: "http://YOUR_ADGUARD_HOME_IP:PORT"  # e.g., "http://192.168.1.100:3000"
+  username: "YOUR_USERNAME"                     # AdGuard Home admin username
+  password: "YOUR_PASSWORD"                     # AdGuard Home admin password
+
+# Monitoring Configuration
+monitoring:
+  # IP addresses to monitor (comma-separated)
+  watch_ips: ["192.168.1.100", "192.168.1.101"]
+  
+  # Check interval in seconds
+  check_interval: 30
+  
+  # Educational domains file
+  educational_domains_file: "educational_domains.txt"
+  
+  # Notification channel (telegram, stdout, file)
+  notification_channel: "telegram"
+
+# Telegram Configuration (if using Telegram notifications)
+telegram:
+  # OpenClaw Telegram account name (from OpenClaw config)
+  account: "YOUR_OPENCLAW_ACCOUNT_NAME"
+  
+  # Telegram chat ID (user ID for direct messages, negative for groups/channels)
+  target: "YOUR_TELEGRAM_CHAT_ID"
+  
+  # Check interval for Telegram notifier in seconds
+  check_interval: 15
+
+# Web Investigator Configuration
+web_investigator:
+  # Enable/disable web investigation
+  enabled: false
+  
+  # Check interval in seconds
+  check_interval: 300
+  
+  # Maximum domains to investigate per run
+  max_domains_per_run: 5
+
+# Logging Configuration
+logging:
+  # Log level (DEBUG, INFO, WARNING, ERROR)
+  level: "INFO"
+  
+  # Log directory
+  log_dir: "logs"
+  
+  # Maximum log file size in MB
+  max_log_size_mb: 10
+  
+  # Number of log files to keep
+  backup_count: 5
+
+# Alert Throttling
+throttling:
+  # Maximum alerts per hour
+  max_alerts_per_hour: 20
+  
+  # Minimum seconds between alerts
+  min_interval_seconds: 30
+  
+  # Maximum queue size
+  max_queue_size: 100
+
+# Service Configuration (for macOS Launchd/Linux Systemd)
+service:
+  # Python executable path
+  python_path: "/usr/bin/python3"
+  
+  # Working directory
+  working_dir: "/path/to/adguard_monitor_project"
+  
+  # User to run service as
+  user: "$USER"
+  
+  # Group to run service as
+  group: "$USER"
+
+# OpenClaw Integration (if using OpenClaw for notifications)
+openclaw:
+  # OpenClaw CLI path
+  cli_path: "/opt/homebrew/bin/openclaw"
+  
+  # Timeout for OpenClaw commands in seconds
+  timeout: 10

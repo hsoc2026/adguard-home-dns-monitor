@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 import subprocess
 import sys
+import hashlib
 
 # Configure logging
 logging.basicConfig(
@@ -43,31 +44,60 @@ class WebInvestigator:
     
     def read_investigation_queue(self) -> List[Dict]:
         """Read domains that need investigation."""
-        if not os.path.exists(self.investigation_file):
-            return []
+        # Try multiple possible investigation files
+        investigation_files = [
+            self.investigation_file,
+            "suspicious_domains.log",
+            "needs_investigation.log"
+        ]
         
+        for file_path in investigation_files:
+            if os.path.exists(file_path):
+                return self._read_investigation_file(file_path)
+        
+        return []
+    
+    def _read_investigation_file(self, file_path: str) -> List[Dict]:
+        """Read domains from a specific investigation file."""
         domains_to_investigate = []
         
-        with open(self.investigation_file, 'r') as f:
+        with open(file_path, 'r') as f:
             for line in f:
                 line = line.strip()
                 if line:
-                    # Parse line: timestamp - domain - reason
-                    parts = line.split(' - ', 2)
-                    if len(parts) >= 2:
-                        timestamp = parts[0]
-                        domain = parts[1]
-                        reason = parts[2] if len(parts) > 2 else "Unknown"
-                        
-                        # Skip if already processed
-                        if domain in self.processed_domains:
+                    # Parse line based on format
+                    # Format 1: timestamp - IP - domain (from suspicious_domains.log)
+                    # Format 2: timestamp - domain - reason (from needs_investigation.log)
+                    
+                    # Try format 1 first (timestamp - IP - domain)
+                    if ' - ' in line:
+                        parts = line.split(' - ', 2)
+                        if len(parts) >= 3:
+                            timestamp = parts[0]
+                            ip = parts[1]
+                            domain = parts[2]
+                            reason = f"Suspicious domain from {ip}"
+                        elif len(parts) >= 2:
+                            timestamp = parts[0]
+                            domain = parts[1]
+                            reason = "Unknown"
+                        else:
                             continue
-                        
-                        domains_to_investigate.append({
-                            'domain': domain,
-                            'timestamp': timestamp,
-                            'reason': reason
-                        })
+                    else:
+                        # Just a domain name
+                        timestamp = datetime.now().isoformat()
+                        domain = line
+                        reason = "Unknown"
+                    
+                    # Skip if already processed
+                    if domain in self.processed_domains:
+                        continue
+                    
+                    domains_to_investigate.append({
+                        'domain': domain,
+                        'timestamp': timestamp,
+                        'reason': reason
+                    })
         
         return domains_to_investigate
     
@@ -258,6 +288,57 @@ class WebInvestigator:
         
         return message
     
+    def send_telegram_message(self, message: str) -> bool:
+        """Send message to Telegram via OpenClaw."""
+        try:
+            cmd = [
+                '/opt/homebrew/bin/openclaw', 'message', 'send',
+                '--channel', 'telegram',
+                '--account', 'internetsecurity',
+                '--target', '8771371027',
+                '--message', message
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0:
+                logger.info("✅ Telegram message sent")
+                return True
+            else:
+                logger.error(f"❌ Failed to send: {result.stderr[:100]}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.error("❌ Send timeout")
+            return False
+        except Exception as e:
+            logger.error(f"❌ Error: {e}")
+            return False
+    
+    def _get_message_hash(self, message: str) -> str:
+        """Create hash for message."""
+        return hashlib.md5(message.encode()).hexdigest()[:16]
+    
+    def _load_sent_investigation_hashes(self) -> set:
+        """Load already sent investigation message hashes."""
+        sent_hashes = set()
+        if os.path.exists("investigation_sent.log"):
+            with open("investigation_sent.log", 'r') as f:
+                for line in f:
+                    if line.strip():
+                        sent_hashes.add(line.strip())
+        return sent_hashes
+    
+    def _mark_investigation_as_sent(self, message_hash: str):
+        """Mark investigation message as sent."""
+        with open("investigation_sent.log", "a") as f:
+            f.write(f"{message_hash}\n")
+    
     def process_queue(self):
         """Process investigation queue."""
         domains = self.read_investigation_queue()
@@ -268,7 +349,11 @@ class WebInvestigator:
         
         logger.info(f"Found {len(domains)} domains to investigate")
         
+        # Load sent hashes
+        sent_hashes = self._load_sent_investigation_hashes()
+        
         processed_count = 0
+        sent_notifications = 0
         for domain_info in domains[:5]:  # Limit to 5 per run
             domain = domain_info['domain']
             
@@ -286,11 +371,21 @@ class WebInvestigator:
             if confidence in ['high', 'medium'] and category in ['games', 'entertainment', 'possible_games', 'possible_entertainment']:
                 notification = self.generate_notification(domain_info, result)
                 
-                # Log to Telegram queue
-                with open("telegram_investigation_results.log", "a") as f:
-                    f.write(f"{datetime.now().isoformat()}\n{notification}\n---\n")
-                
-                logger.info(f"Queued notification for {domain} ({category}, {confidence})")
+                # Check if already sent
+                message_hash = self._get_message_hash(notification)
+                if message_hash in sent_hashes:
+                    logger.info(f"Already sent notification for {domain}")
+                else:
+                    # Send to Telegram
+                    if self.send_telegram_message(notification):
+                        self._mark_investigation_as_sent(message_hash)
+                        sent_notifications += 1
+                        logger.info(f"✅ Sent notification for {domain} ({category}, {confidence})")
+                    else:
+                        # Fallback: log to file
+                        with open("telegram_investigation_results.log", "a") as f:
+                            f.write(f"{datetime.now().isoformat()}\n{notification}\n---\n")
+                        logger.info(f"Queued notification for {domain} ({category}, {confidence})")
             
             # Mark as processed
             self._mark_as_processed(domain)
@@ -305,6 +400,9 @@ class WebInvestigator:
             
             # Small delay between investigations
             time.sleep(2)
+        
+        if sent_notifications > 0:
+            logger.info(f"✅ Sent {sent_notifications} investigation notification(s)")
         
         return processed_count
     
